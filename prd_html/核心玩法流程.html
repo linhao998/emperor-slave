@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <title>核心玩法流程</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    <link href="resources/css/axure_rp_page.css" type="text/css" rel="stylesheet"/>
+    <link href="data/styles.css" type="text/css" rel="stylesheet"/>
+    <link href="files/核心玩法流程/styles.css" type="text/css" rel="stylesheet"/>
+    <script src="resources/scripts/jquery-3.2.1.min.js"></script>
+    <script src="resources/scripts/axure/axQuery.js"></script>
+    <script src="resources/scripts/axure/globals.js"></script>
+    <script src="resources/scripts/axutils.js"></script>
+    <script src="resources/scripts/axure/annotation.js"></script>
+    <script src="resources/scripts/axure/axQuery.std.js"></script>
+    <script src="resources/scripts/axure/doc.js"></script>
+    <script src="resources/scripts/messagecenter.js"></script>
+    <script src="resources/scripts/axure/events.js"></script>
+    <script src="resources/scripts/axure/recording.js"></script>
+    <script src="resources/scripts/axure/action.js"></script>
+    <script src="resources/scripts/axure/expr.js"></script>
+    <script src="resources/scripts/axure/geometry.js"></script>
+    <script src="resources/scripts/axure/flyout.js"></script>
+    <script src="resources/scripts/axure/model.js"></script>
+    <script src="resources/scripts/axure/repeater.js"></script>
+    <script src="resources/scripts/axure/sto.js"></script>
+    <script src="resources/scripts/axure/utils.temp.js"></script>
+    <script src="resources/scripts/axure/variables.js"></script>
+    <script src="resources/scripts/axure/drag.js"></script>
+    <script src="resources/scripts/axure/move.js"></script>
+    <script src="resources/scripts/axure/visibility.js"></script>
+    <script src="resources/scripts/axure/style.js"></script>
+    <script src="resources/scripts/axure/adaptive.js"></script>
+    <script src="resources/scripts/axure/tree.js"></script>
+    <script src="resources/scripts/axure/init.temp.js"></script>
+    <script src="resources/scripts/axure/legacy.js"></script>
+    <script src="resources/scripts/axure/viewer.js"></script>
+    <script src="resources/scripts/axure/math.js"></script>
+    <script src="resources/scripts/axure/jquery.nicescroll.min.js"></script>
+    <script src="data/document.js"></script>
+    <script src="files/核心玩法流程/data.js"></script>
+    <script type="text/javascript">
+      $axure.utils.getTransparentGifPath = function() { return 'resources/images/transparent.gif'; };
+      $axure.utils.getOtherPath = function() { return 'resources/Other.html'; };
+      $axure.utils.getReloadPath = function() { return 'resources/reload.html'; };
+    </script>
+  </head>
+  <body>
+    <div id="base" class="">
+
+      <!-- Unnamed (图片 ) -->
+      <div id="u23" class="ax_default image">
+        <img id="u23_img" class="img " src="images/核心玩法流程/u23.png"/>
+        <div id="u23_text" class="text " style="display:none; visibility: hidden">
+          <p></p>
+        </div>
+      </div>
+
+      <!-- Unnamed (矩形) -->
+      <div id="u24" class="ax_default _文本段落">
+        <div id="u24_div" class=""></div>
+        <div id="u24_text" class="text ">
+          <p><span>说明：使用ProcessOn绘制，源文件位置为‘emperor_slave/docs/game_round_flow.jpg’，为了使AI更好读取，准备了用mermaid代码制作的markdown格式流程图，位置为‘emperor_slave/docs/game_round_flow.md’，同时把代码附在本页面。</span></p>
+        </div>
+      </div>
+
+      <!-- Unnamed (矩形) -->
+      <div id="u25" class="ax_default flow_shape">
+        <div id="u25_div" class=""></div>
+        <div id="u25_text" class="text ">
+          <p><span>```mermaid</span></p><p><span>flowchart LR</span></p><p><span>&nbsp;&nbsp;&nbsp; %% =========================</span></p><p><span>&nbsp;&nbsp;&nbsp; %% 玩家操作泳道</span></p><p><span>&nbsp;&nbsp;&nbsp; %% =========================</span></p><p><span>&nbsp;&nbsp;&nbsp; subgraph Player[&quot;玩家操作&quot;]</span></p><p><span>&nbsp;&nbsp; &nbsp; &nbsp;&nbsp; P0([开始游戏])</span></p><p><span>&nbsp;&nbsp; &nbsp; &nbsp;&nbsp; P1[选牌]</span></p><p><span>&nbsp;&nbsp; &nbsp; &nbsp;&nbsp; P2[点击出牌]</span></p><p><span>&nbsp;&nbsp; &nbsp; &nbsp;&nbsp; P3{是否再来一局？}</span></p><p><span>&nbsp;&nbsp;&nbsp; end</span></p><p><span>&nbsp;&nbsp;&nbsp; %% =========================</span></p><p><span>&nbsp;&nbsp;&nbsp; %% 系统泳道</span></p><p><span>&nbsp;&nbsp;&nbsp; %% =========================</span></p><p><span>&nbsp;&nbsp;&nbsp; subgraph System[&quot;系统&quot;]</span></p><p><span>&nbsp;&nbsp; &nbsp; &nbsp;&nbsp; S1[出牌]</span></p><p><span>&nbsp;&nbsp; &nbsp; &nbsp;&nbsp; S2[锁定双方出牌]</span></p><p><span>&nbsp;&nbsp; &nbsp; &nbsp;&nbsp; S3[双方卡牌移动至对战区]</span></p><p><span>&nbsp;&nbsp; &nbsp; &nbsp;&nbsp; S4[系统方翻牌]</span></p><p><span>&nbsp;&nbsp; &nbsp; &nbsp;&nbsp; S5[胜负规则判定]</span></p><p><span>&nbsp;&nbsp; &nbsp; &nbsp;&nbsp; S6{是否决出胜负？}</span></p><p><span>&nbsp;&nbsp; &nbsp; &nbsp;&nbsp; S7[结算画面]</span></p><p><span>&nbsp;&nbsp; &nbsp; &nbsp;&nbsp; S8([返回主界面])</span></p><p><span>&nbsp;&nbsp;&nbsp; end</span></p><p><span>&nbsp;&nbsp;&nbsp; %% =========================</span></p><p><span>&nbsp;&nbsp;&nbsp; %% 主流程</span></p><p><span>&nbsp;&nbsp;&nbsp; %% =========================</span></p><p><span>&nbsp;&nbsp;&nbsp; P0 --&gt; P1</span></p><p><span>&nbsp;&nbsp;&nbsp; P1 --&gt; P2</span></p><p><span>&nbsp;&nbsp;&nbsp; P2 --&gt; S1</span></p><p><span>&nbsp;&nbsp;&nbsp; S1 --&gt; S2</span></p><p><span>&nbsp;&nbsp;&nbsp; S2 --&gt; S3</span></p><p><span>&nbsp;&nbsp;&nbsp; S3 --&gt; S4</span></p><p><span>&nbsp;&nbsp;&nbsp; S4 --&gt; S5</span></p><p><span>&nbsp;&nbsp;&nbsp; S5 --&gt; S6</span></p><p><span>&nbsp;&nbsp;&nbsp; %% =========================</span></p><p><span>&nbsp;&nbsp;&nbsp; %% 分支逻辑</span></p><p><span>&nbsp;&nbsp;&nbsp; %% =========================</span></p><p><span>&nbsp;&nbsp;&nbsp; S6 -- 否（下一回合） --&gt; P1</span></p><p><span>&nbsp;&nbsp;&nbsp; S6 -- 是 --&gt; S7</span></p><p><span>&nbsp;&nbsp;&nbsp; S7 --&gt; P3</span></p><p><span>&nbsp;&nbsp;&nbsp; P3 -- 是 --&gt; P0</span></p><p><span>&nbsp;&nbsp;&nbsp; P3 -- 否 --&gt; S8</span></p><p><span>```</span></p><p><span><br></span></p>
+        </div>
+      </div>
+    </div>
+    <script src="resources/scripts/axure/ios.js"></script>
+  </body>
+</html>

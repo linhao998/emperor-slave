@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <title>状态机图</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    <link href="resources/css/axure_rp_page.css" type="text/css" rel="stylesheet"/>
+    <link href="data/styles.css" type="text/css" rel="stylesheet"/>
+    <link href="files/状态机图/styles.css" type="text/css" rel="stylesheet"/>
+    <script src="resources/scripts/jquery-3.2.1.min.js"></script>
+    <script src="resources/scripts/axure/axQuery.js"></script>
+    <script src="resources/scripts/axure/globals.js"></script>
+    <script src="resources/scripts/axutils.js"></script>
+    <script src="resources/scripts/axure/annotation.js"></script>
+    <script src="resources/scripts/axure/axQuery.std.js"></script>
+    <script src="resources/scripts/axure/doc.js"></script>
+    <script src="resources/scripts/messagecenter.js"></script>
+    <script src="resources/scripts/axure/events.js"></script>
+    <script src="resources/scripts/axure/recording.js"></script>
+    <script src="resources/scripts/axure/action.js"></script>
+    <script src="resources/scripts/axure/expr.js"></script>
+    <script src="resources/scripts/axure/geometry.js"></script>
+    <script src="resources/scripts/axure/flyout.js"></script>
+    <script src="resources/scripts/axure/model.js"></script>
+    <script src="resources/scripts/axure/repeater.js"></script>
+    <script src="resources/scripts/axure/sto.js"></script>
+    <script src="resources/scripts/axure/utils.temp.js"></script>
+    <script src="resources/scripts/axure/variables.js"></script>
+    <script src="resources/scripts/axure/drag.js"></script>
+    <script src="resources/scripts/axure/move.js"></script>
+    <script src="resources/scripts/axure/visibility.js"></script>
+    <script src="resources/scripts/axure/style.js"></script>
+    <script src="resources/scripts/axure/adaptive.js"></script>
+    <script src="resources/scripts/axure/tree.js"></script>
+    <script src="resources/scripts/axure/init.temp.js"></script>
+    <script src="resources/scripts/axure/legacy.js"></script>
+    <script src="resources/scripts/axure/viewer.js"></script>
+    <script src="resources/scripts/axure/math.js"></script>
+    <script src="resources/scripts/axure/jquery.nicescroll.min.js"></script>
+    <script src="data/document.js"></script>
+    <script src="files/状态机图/data.js"></script>
+    <script type="text/javascript">
+      $axure.utils.getTransparentGifPath = function() { return 'resources/images/transparent.gif'; };
+      $axure.utils.getOtherPath = function() { return 'resources/Other.html'; };
+      $axure.utils.getReloadPath = function() { return 'resources/reload.html'; };
+    </script>
+  </head>
+  <body>
+    <div id="base" class="">
+
+      <!-- Unnamed (图片 ) -->
+      <div id="u26" class="ax_default image">
+        <img id="u26_img" class="img " src="images/状态机图/u26.png"/>
+        <div id="u26_text" class="text " style="display:none; visibility: hidden">
+          <p></p>
+        </div>
+      </div>
+
+      <!-- Unnamed (矩形) -->
+      <div id="u27" class="ax_default _文本段落">
+        <div id="u27_div" class=""></div>
+        <div id="u27_text" class="text ">
+          <p><span>说明：使用ProcessOn绘制，源文件位置为‘emperor_slave/docs/state_machine_flow.jpg’，为了使AI更好读取，准备了用mermaid代码制作的markdown格式流程图，位置为‘emperor_slave/docs/state_machine_flow.md’，同时把代码附在本页面。</span></p>
+        </div>
+      </div>
+
+      <!-- Unnamed (矩形) -->
+      <div id="u28" class="ax_default box_1">
+        <div id="u28_div" class=""></div>
+        <div id="u28_text" class="text ">
+          <p><span>```mermaid</span></p><p><span>stateDiagram-v2</span></p><p><span>&nbsp;&nbsp;&nbsp; [*] --&gt; Idle</span></p><p><span>&nbsp;&nbsp;&nbsp; %% =========================</span></p><p><span>&nbsp;&nbsp;&nbsp; %% 核心状态定义</span></p><p><span>&nbsp;&nbsp;&nbsp; %% =========================</span></p><p><span>&nbsp;&nbsp;&nbsp; Idle: 未开始</span></p><p><span>&nbsp;&nbsp;&nbsp; Selecting: 选择卡牌</span></p><p><span>&nbsp;&nbsp;&nbsp; Confirmed: 已确认出牌</span></p><p><span>&nbsp;&nbsp;&nbsp; Resolving: 系统处理中</span></p><p><span>&nbsp;&nbsp;&nbsp; Result: 结果展示</span></p><p><span>&nbsp;&nbsp;&nbsp; End: 游戏结束</span></p><p><span>&nbsp;&nbsp;&nbsp; %% =========================</span></p><p><span>&nbsp;&nbsp;&nbsp; %% 状态迁移</span></p><p><span>&nbsp;&nbsp;&nbsp; %% =========================</span></p><p><span>&nbsp;&nbsp;&nbsp; Idle --&gt; Selecting : 点击开始游戏</span></p><p><span>&nbsp;&nbsp;&nbsp; Selecting --&gt; Confirmed : 点击出牌</span></p><p><span>&nbsp;&nbsp;&nbsp; Selecting --&gt; Selecting : 未结束（下一回合）</span></p><p><span>&nbsp;&nbsp;&nbsp; Confirmed --&gt; Resolving : 系统锁定双方出牌</span></p><p><span>&nbsp;&nbsp;&nbsp; Resolving --&gt; Result : 判定完成</span></p><p><span>&nbsp;&nbsp;&nbsp; Result --&gt; Selecting : 未结束</span></p><p><span>&nbsp;&nbsp;&nbsp; Result --&gt; End : 结束</span></p><p><span>&nbsp;&nbsp;&nbsp; End --&gt; Idle : 再来一局</span></p><p><span>&nbsp;&nbsp;&nbsp; End --&gt; [*] : 不再来 / 返回主界面</span></p><p><span>```</span></p>
+        </div>
+      </div>
+    </div>
+    <script src="resources/scripts/axure/ios.js"></script>
+  </body>
+</html>
