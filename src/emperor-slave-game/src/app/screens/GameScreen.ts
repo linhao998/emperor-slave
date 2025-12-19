@@ -1,5 +1,21 @@
+import { CardType, MatchResult, determineResult } from '../../rules/determineResult'
+
 export type GameScreenHandlers = {
   onExitToHome: () => void
+}
+
+type Card = {
+  id: string
+  type: CardType
+  owner: 'player' | 'ai'
+  used: boolean
+}
+
+enum GameState {
+  Selecting = 'Selecting',
+  Confirmed = 'Confirmed',
+  Resolving = 'Resolving',
+  Result = 'Result',
 }
 
 export function renderGame(
@@ -14,52 +30,105 @@ export function renderGame(
   const aiHand = document.createElement('div')
   aiHand.className = 'ai-hand'
 
-  const aiPositions = [25, 150, 275, 400, 520]
-  aiPositions.forEach((left, index) => {
+  let aiHandCards: Card[] = []
+  const aiCardElements: HTMLDivElement[] = []
+  const aiCardPositions = [25, 150, 275, 400, 520]
+  const aiTop = 25
+  aiCardPositions.forEach((left, index) => {
     const card = document.createElement('div')
     card.className = 'card ai-card'
     card.style.left = `${left}px`
-    card.style.top = '25px'
+    card.style.top = `${aiTop}px`
     card.textContent = 'back'
     card.setAttribute('data-index', String(index))
     aiHand.appendChild(card)
+    aiCardElements.push(card)
   })
 
   const battleArea = document.createElement('div')
   battleArea.className = 'battle-area'
 
+  const battlePositions = {
+    ai: { left: 670, top: 230 },
+    player: { left: 670, top: 420 },
+  }
+
   const aiBattleCard = document.createElement('div')
-  aiBattleCard.className = 'card battle-card'
-  aiBattleCard.style.left = '670px'
-  aiBattleCard.style.top = '230px'
+  aiBattleCard.className = 'card battle-card is-hidden'
+  aiBattleCard.style.left = `${battlePositions.ai.left}px`
+  aiBattleCard.style.top = `${battlePositions.ai.top}px`
   aiBattleCard.textContent = ''
 
   const playerBattleCard = document.createElement('div')
-  playerBattleCard.className = 'card battle-card'
-  playerBattleCard.style.left = '670px'
-  playerBattleCard.style.top = '420px'
+  playerBattleCard.className = 'card battle-card is-hidden'
+  playerBattleCard.style.left = `${battlePositions.player.left}px`
+  playerBattleCard.style.top = `${battlePositions.player.top}px`
   playerBattleCard.textContent = ''
 
-  battleArea.append(aiBattleCard, playerBattleCard)
+  const battleResultText = document.createElement('div')
+  battleResultText.className = 'battle-result'
+
+  battleArea.append(aiBattleCard, playerBattleCard, battleResultText)
 
   const playerHand = document.createElement('div')
   playerHand.className = 'player-hand'
 
-  const playerCards = [
-    { left: 820, label: 'emperor' },
-    { left: 945, label: 'slave' },
-    { left: 1070, label: 'citizen' },
-    { left: 1195, label: 'citizen' },
-    { left: 1315, label: 'citizen' },
+  let playerHandCards: Card[] = []
+  const playerTop = 625
+  const playerSlots = [
+    { left: 820, cardId: 'P-E' },
+    { left: 945, cardId: 'P-S' },
+    { left: 1070, cardId: 'P-C1' },
+    { left: 1195, cardId: 'P-C2' },
+    { left: 1315, cardId: 'P-C3' },
   ]
-  playerCards.forEach((item, index) => {
+  const playerSlotPositionsByIndex = playerSlots.map((slot) => ({
+    left: slot.left,
+    top: playerTop,
+  }))
+  let playerSlotIndexById: Record<string, number> = {}
+  const playerCardElements: Array<{
+    element: HTMLDivElement
+    cardId: string
+  }> = []
+  const playerCardElementById = new Map<string, HTMLDivElement>()
+  playerSlots.forEach((slot, index) => {
+    playerSlotIndexById[slot.cardId] = index
     const card = document.createElement('div')
     card.className = 'card player-card'
-    card.style.left = `${item.left}px`
-    card.style.top = '625px'
-    card.textContent = item.label
+    card.style.left = `${slot.left}px`
+    card.style.top = `${playerTop}px`
+    card.textContent = ''
     card.setAttribute('data-index', String(index))
+    card.setAttribute('data-card', slot.cardId)
+    card.addEventListener('click', () => {
+      if (currentState !== GameState.Selecting) {
+        return
+      }
+      const selectedCard = getPlayerCardById(slot.cardId)
+      if (!selectedCard || selectedCard.used) {
+        return
+      }
+      if (selectedPlayerCardId === selectedCard.id) {
+        playerCard = selectedCard
+        setGameState(GameState.Confirmed)
+        setGameState(GameState.Resolving)
+        return
+      }
+      selectedPlayerCardId = selectedCard.id
+      playerCard = selectedCard
+      updateSelectedCard()
+      updateStateUI()
+    })
+    card.addEventListener('transitionend', (event) => {
+      if (event.propertyName !== 'left') {
+        return
+      }
+      card.classList.remove('is-shifting')
+    })
     playerHand.appendChild(card)
+    playerCardElements.push({ element: card, cardId: slot.cardId })
+    playerCardElementById.set(slot.cardId, card)
   })
 
   const controlArea = document.createElement('div')
@@ -110,6 +179,7 @@ export function renderGame(
   restartButton.textContent = '重新开始'
   restartButton.addEventListener('click', () => {
     hidePause()
+    resetGame()
   })
 
   const homeButton = document.createElement('button')
@@ -125,8 +195,70 @@ export function renderGame(
   pauseDialog.append(pauseTitle, pauseActions)
   pauseModal.appendChild(pauseDialog)
 
-  screen.append(aiHand, battleArea, playerHand, controlArea, pauseModal)
+  const resultModal = document.createElement('div')
+  resultModal.className = 'result-modal'
+  resultModal.setAttribute('aria-hidden', 'true')
+
+  const resultDialog = document.createElement('div')
+  resultDialog.className = 'result-dialog'
+
+  const resultMessage = document.createElement('div')
+  resultMessage.className = 'result-message'
+
+  const resultActions = document.createElement('div')
+  resultActions.className = 'result-actions'
+
+  const playAgainButton = document.createElement('button')
+  playAgainButton.type = 'button'
+  playAgainButton.className = 'result-button'
+  playAgainButton.textContent = '再来一局'
+  playAgainButton.addEventListener('click', () => {
+    resetGame()
+  })
+
+  const backHomeButton = document.createElement('button')
+  backHomeButton.type = 'button'
+  backHomeButton.className = 'result-button'
+  backHomeButton.textContent = '回到主页'
+  backHomeButton.addEventListener('click', () => {
+    resetGame()
+    handlers.onExitToHome()
+  })
+
+  resultActions.append(playAgainButton, backHomeButton)
+  resultModal.append(resultDialog, resultMessage, resultActions)
+
+  screen.append(aiHand, battleArea, playerHand, controlArea, pauseModal, resultModal)
   container.appendChild(screen)
+
+  let currentState: GameState = GameState.Selecting
+  let playerCard: Card | null = null
+  let selectedPlayerCardId: string | null = null
+  let aiCard: Card | null = null
+  let matchResult: MatchResult | null = null
+  let roundCount = 0
+  const maxRounds = 5
+  const flipDelayMs = 100
+  const revealHoldMs = 100
+
+  const setGameState = (nextState: GameState): void => {
+    if (nextState === GameState.Resolving) {
+      if (!playerCard) {
+        return
+      }
+      roundCount += 1
+      playerCard.used = true
+      currentState = nextState
+      updateStateUI()
+      startBattleSequence()
+      return
+    }
+
+    currentState = nextState
+    updateStateUI()
+  }
+
+  resetGame()
 
   function showPause(): void {
     pauseModal.classList.add('is-visible')
@@ -136,5 +268,309 @@ export function renderGame(
   function hidePause(): void {
     pauseModal.classList.remove('is-visible')
     pauseModal.setAttribute('aria-hidden', 'true')
+  }
+
+  function createPlayerHand(): Card[] {
+    return [
+      { id: 'P-E', type: CardType.Emperor, owner: 'player', used: false },
+      { id: 'P-S', type: CardType.Slave, owner: 'player', used: false },
+      { id: 'P-C1', type: CardType.Citizen, owner: 'player', used: false },
+      { id: 'P-C2', type: CardType.Citizen, owner: 'player', used: false },
+      { id: 'P-C3', type: CardType.Citizen, owner: 'player', used: false },
+    ]
+  }
+
+  function createAiHand(): Card[] {
+    return [
+      { id: 'A-C1', type: CardType.Citizen, owner: 'ai', used: false },
+      { id: 'A-C2', type: CardType.Citizen, owner: 'ai', used: false },
+      { id: 'A-C3', type: CardType.Citizen, owner: 'ai', used: false },
+      { id: 'A-E', type: CardType.Emperor, owner: 'ai', used: false },
+      { id: 'A-S', type: CardType.Slave, owner: 'ai', used: false },
+    ]
+  }
+
+  function getPlayerCardById(cardId: string): Card | null {
+    return playerHandCards.find((card) => card.id === cardId) ?? null
+  }
+
+  function syncHandsUI(): void {
+    playerCardElements.forEach(({ element, cardId }) => {
+      const card = getPlayerCardById(cardId)
+      if (!card) {
+        return
+      }
+      element.textContent = card.type.toLowerCase()
+      element.setAttribute('data-card', card.id)
+    })
+    aiCardElements.forEach((element, index) => {
+      const card = aiHandCards[index]
+      if (!card) {
+        return
+      }
+      element.setAttribute('data-card', card.id)
+    })
+  }
+
+  function resetGame(): void {
+    playerHandCards = createPlayerHand()
+    aiHandCards = createAiHand()
+    playerCard = null
+    aiCard = null
+    matchResult = null
+    selectedPlayerCardId = null
+    roundCount = 0
+    currentState = GameState.Selecting
+    resetBattleCards()
+    resetHandLayout()
+    resetAiHandLayout()
+    resultMessage.textContent = ''
+    syncHandsUI()
+    updateSelectedCard()
+    updateStateUI()
+  }
+
+  function resetHandLayout(): void {
+    playerSlotIndexById = {}
+    playerSlots.forEach((slot, index) => {
+      playerSlotIndexById[slot.cardId] = index
+      const element = playerCardElementById.get(slot.cardId)
+      if (!element) {
+        return
+      }
+      element.classList.remove('is-used', 'is-shifting')
+      element.style.visibility = 'visible'
+      element.style.left = `${playerSlotPositionsByIndex[index].left}px`
+      element.style.top = `${playerSlotPositionsByIndex[index].top}px`
+    })
+  }
+
+  function resetAiHandLayout(): void {
+    aiCardElements.forEach((element, index) => {
+      element.classList.remove('is-used')
+      element.style.visibility = 'visible'
+      element.style.left = `${aiCardPositions[index]}px`
+      element.style.top = `${aiTop}px`
+    })
+  }
+
+  function getPlayerCardPosition(cardId: string): { left: number; top: number } | null {
+    const index = playerSlotIndexById[cardId]
+    if (index === undefined) {
+      return null
+    }
+    return playerSlotPositionsByIndex[index] ?? null
+  }
+
+  function getAiCardPositionByIndex(index: number): { left: number; top: number } | null {
+    if (index < 0 || index >= aiCardPositions.length) {
+      return null
+    }
+    return { left: aiCardPositions[index], top: aiTop }
+  }
+
+  function resetRoundSelection(): void {
+    playerCard = null
+    selectedPlayerCardId = null
+    aiCard = null
+    matchResult = null
+    currentState = GameState.Selecting
+    updateSelectedCard()
+    updateStateUI()
+  }
+
+  function resetBattleCards(): void {
+    aiBattleCard.classList.add('is-hidden')
+    playerBattleCard.classList.add('is-hidden')
+    aiBattleCard.classList.remove('is-moving', 'is-back')
+    playerBattleCard.classList.remove('is-moving')
+    aiBattleCard.textContent = ''
+    playerBattleCard.textContent = ''
+    battleResultText.textContent = ''
+    aiBattleCard.style.left = `${battlePositions.ai.left}px`
+    aiBattleCard.style.top = `${battlePositions.ai.top}px`
+    playerBattleCard.style.left = `${battlePositions.player.left}px`
+    playerBattleCard.style.top = `${battlePositions.player.top}px`
+  }
+
+  function hidePlayerCardInHand(cardId: string): void {
+    const element = playerCardElementById.get(cardId)
+    if (!element) {
+      return
+    }
+    element.classList.add('is-used')
+    element.style.visibility = 'hidden'
+  }
+
+  function hideAiCardInHand(index: number): void {
+    const element = aiCardElements[index]
+    if (!element) {
+      return
+    }
+    element.classList.add('is-used')
+    element.style.visibility = 'hidden'
+  }
+
+  function getNextAiAnimationIndex(): number | null {
+    for (let index = aiCardElements.length - 1; index >= 0; index -= 1) {
+      const element = aiCardElements[index]
+      if (!element || element.classList.contains('is-used')) {
+        continue
+      }
+      return index
+    }
+    return null
+  }
+
+  function updatePlayerHandPositions(): void {
+    Object.keys(playerSlotIndexById).forEach((cardId) => {
+      const index = playerSlotIndexById[cardId]
+      const position = playerSlotPositionsByIndex[index]
+      const element = playerCardElementById.get(cardId)
+      if (!position || !element) {
+        return
+      }
+      element.classList.add('is-shifting')
+      element.style.left = `${position.left}px`
+      element.style.top = `${position.top}px`
+    })
+  }
+
+  function shiftPlayerHandAfterPlay(cardId: string): void {
+    const removedIndex = playerSlotIndexById[cardId]
+    if (removedIndex === undefined) {
+      return
+    }
+    delete playerSlotIndexById[cardId]
+    Object.keys(playerSlotIndexById).forEach((id) => {
+      if (playerSlotIndexById[id] < removedIndex) {
+        playerSlotIndexById[id] += 1
+      }
+    })
+    updatePlayerHandPositions()
+  }
+
+  function startBattleSequence(): void {
+    if (!playerCard) {
+      return
+    }
+    const playerCardSnapshot = playerCard
+    const aiAnimationIndex = getNextAiAnimationIndex()
+    if (aiAnimationIndex === null) {
+      return
+    }
+    const playerOrigin = getPlayerCardPosition(playerCardSnapshot.id)
+    const aiOrigin = getAiCardPositionByIndex(aiAnimationIndex)
+    if (!playerOrigin || !aiOrigin) {
+      return
+    }
+    aiCard = null
+    matchResult = null
+
+    resetBattleCards()
+    hidePlayerCardInHand(playerCardSnapshot.id)
+    shiftPlayerHandAfterPlay(playerCardSnapshot.id)
+    hideAiCardInHand(aiAnimationIndex)
+    playerBattleCard.classList.remove('is-hidden')
+    aiBattleCard.classList.remove('is-hidden')
+    playerBattleCard.textContent = playerCardSnapshot.type
+    aiBattleCard.textContent = 'back'
+    aiBattleCard.classList.add('is-back')
+    playerBattleCard.style.left = `${playerOrigin.left}px`
+    playerBattleCard.style.top = `${playerOrigin.top}px`
+    aiBattleCard.style.left = `${aiOrigin.left}px`
+    aiBattleCard.style.top = `${aiOrigin.top}px`
+    playerBattleCard.classList.add('is-moving')
+    aiBattleCard.classList.add('is-moving')
+
+    let pendingTransitions = 2
+    const onArrive = (event: TransitionEvent): void => {
+      if (event.propertyName !== 'top') {
+        return
+      }
+      const target = event.currentTarget as HTMLElement
+      target.removeEventListener('transitionend', onArrive)
+      pendingTransitions -= 1
+      if (pendingTransitions !== 0) {
+        return
+      }
+      const drawnAiCard = drawRandomCard(aiHandCards)
+      if (!drawnAiCard) {
+        return
+      }
+      drawnAiCard.used = true
+      aiCard = drawnAiCard
+      matchResult = determineResult(playerCardSnapshot.type, drawnAiCard.type)
+      window.setTimeout(() => {
+        aiBattleCard.classList.remove('is-back')
+        aiBattleCard.textContent = drawnAiCard.type
+        window.setTimeout(() => {
+          finalizeBattle()
+        }, revealHoldMs)
+      }, flipDelayMs)
+    }
+
+    playerBattleCard.addEventListener('transitionend', onArrive)
+    aiBattleCard.addEventListener('transitionend', onArrive)
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        playerBattleCard.style.left = `${battlePositions.player.left}px`
+        playerBattleCard.style.top = `${battlePositions.player.top}px`
+        aiBattleCard.style.left = `${battlePositions.ai.left}px`
+        aiBattleCard.style.top = `${battlePositions.ai.top}px`
+      })
+    })
+  }
+
+  function finalizeBattle(): void {
+    if (!matchResult) {
+      return
+    }
+    if (matchResult === MatchResult.Draw && roundCount < maxRounds) {
+      resetRoundSelection()
+      resetBattleCards()
+      return
+    }
+    currentState = GameState.Result
+    updateStateUI()
+    battleResultText.textContent = ''
+    resultMessage.textContent = getResultLabel(matchResult)
+  }
+
+  function drawRandomCard(hand: Card[]): Card | null {
+    const available = hand.filter((card) => !card.used)
+    if (available.length === 0) {
+      return null
+    }
+    const index = Math.floor(Math.random() * available.length)
+    return available[index]
+  }
+
+  function updateSelectedCard(): void {
+    playerCardElements.forEach(({ element, cardId }) => {
+      element.classList.toggle('is-selected', selectedPlayerCardId === cardId)
+    })
+  }
+
+  function updateStateUI(): void {
+    playerHand.classList.toggle('is-locked', currentState !== GameState.Selecting)
+    if (currentState === GameState.Result) {
+      resultModal.classList.add('is-visible')
+      resultModal.setAttribute('aria-hidden', 'false')
+    } else {
+      resultModal.classList.remove('is-visible')
+      resultModal.setAttribute('aria-hidden', 'true')
+    }
+  }
+
+  function getResultLabel(result: MatchResult): string {
+    if (result === MatchResult.PlayerWin) {
+      return '你赢了'
+    }
+    if (result === MatchResult.AIWin) {
+      return '你输了'
+    }
+    return '平局'
   }
 }
