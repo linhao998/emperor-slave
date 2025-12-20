@@ -251,10 +251,13 @@ body {
 .battle-card {
   border-radius: 10px;
   opacity: 0;
+  --battle-collision-offset: 0px;
+  --battle-collision-y: 0px;
   --battle-translate-y: 0px;
   --battle-rotate-y: 0deg;
   transform-style: preserve-3d;
-  transform: translateY(var(--battle-translate-y)) rotateY(var(--battle-rotate-y));
+  transform: translateY(calc(var(--battle-translate-y) + var(--battle-collision-y)))
+    rotateY(var(--battle-rotate-y));
   backface-visibility: hidden;
   transition: opacity 0.3s ease, transform 0.6s ease;
 }
@@ -266,15 +269,21 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #d9d9d9;
+  background-color: #ffffff;
   color: #111111;
   border-radius: inherit;
+  border: 1px solid #797979;
   backface-visibility: hidden;
   transform: rotateY(180deg);
 }
 
 .battle-card.enter {
   --battle-translate-y: 200px;
+}
+
+.battle-card.is-colliding {
+  --battle-collision-y: var(--battle-collision-offset);
+  transition: opacity 0.3s ease, transform 0.12s ease;
 }
 
 .flying-card {
@@ -293,7 +302,7 @@ body {
 }
 
 .flying-card.is-back {
-  background-color: #d9d9d9;
+  background-color: #ffffff;
   color: #111111;
 }
 
@@ -524,10 +533,15 @@ body {
   visibility: hidden;
 }
 
+.battle-card.is-appearing {
+  transition: opacity 0s linear, transform 0.6s ease;
+}
+
 .battle-card.is-back {
-  background-color: #d9d9d9;
+  background-color: #ffffff;
   color: transparent;
   --battle-rotate-y: 180deg;
+  transition: opacity 0s linear, transform 0s;
 }
 
 .battle-area {
@@ -540,10 +554,6 @@ body {
 
 .battle-card {
   transition: opacity 0.3s ease, transform 0.6s ease;
-}
-
-.battle-card.is-preflip {
-  transition: opacity 0.3s ease, transform 0s;
 }
 
 .battle-area.show .battle-card {

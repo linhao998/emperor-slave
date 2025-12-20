@@ -16,6 +16,7 @@ type FlyingCardHandle = {
   deltaX: number
   deltaY: number
   done: Promise<void>
+  cleanup: () => void
 }
 
 enum GameState {
@@ -248,9 +249,22 @@ export function renderGame(
   let battleStageReady = false
   const maxRounds = 5
   const arrivalHoldMs = 1000
+  const battleFlipDurationMs = 600
   const drawHoldMs = 1000
   const resultHoldMs = 1500
   const battleFadeDurationMs = 300
+  const battleCollisionOffsetPx = 15
+  const battleCollisionDurationMs = 120
+  const battleCollisionHoldMs = 100
+
+  aiBattleCard.style.setProperty(
+    '--battle-collision-offset',
+    `${battleCollisionOffsetPx}px`,
+  )
+  playerBattleCard.style.setProperty(
+    '--battle-collision-offset',
+    `-${battleCollisionOffsetPx}px`,
+  )
 
   const logStateChange = (label: string, nextState: GameState): void => {
     console.log(label, {
@@ -407,27 +421,12 @@ export function renderGame(
     updateStateUI()
   }
 
-  function getPlayerCardPosition(cardId: string): { left: number; top: number } | null {
-    const index = playerSlotIndexById[cardId]
-    if (index === undefined) {
-      return null
-    }
-    return playerSlotPositionsByIndex[index] ?? null
-  }
-
-  function getAiCardPositionByIndex(index: number): { left: number; top: number } | null {
-    if (index < 0 || index >= aiCardPositions.length) {
-      return null
-    }
-    return { left: aiCardPositions[index], top: aiTop }
-  }
-
 
   function resetBattleCards(): void {
     aiBattleCard.classList.add('is-hidden')
     playerBattleCard.classList.add('is-hidden')
-    aiBattleCard.classList.remove('is-back', 'enter', 'is-preflip')
-    playerBattleCard.classList.remove('enter', 'is-preflip')
+    aiBattleCard.classList.remove('is-back', 'enter', 'is-colliding', 'is-appearing')
+    playerBattleCard.classList.remove('enter', 'is-colliding', 'is-appearing')
     aiBattleCard.textContent = ''
     playerBattleCard.textContent = ''
     battleResultText.textContent = ''
@@ -445,6 +444,18 @@ export function renderGame(
     }
     aiBattleCard.classList.add('is-hidden')
     playerBattleCard.classList.add('is-hidden')
+  }
+
+  function runBattleCollision(): Promise<void> {
+    return new Promise((resolve) => {
+      aiBattleCard.classList.add('is-colliding')
+      playerBattleCard.classList.add('is-colliding')
+      window.setTimeout(() => {
+        aiBattleCard.classList.remove('is-colliding')
+        playerBattleCard.classList.remove('is-colliding')
+        window.setTimeout(resolve, battleCollisionDurationMs)
+      }, battleCollisionDurationMs + battleCollisionHoldMs)
+    })
   }
 
   function createFlyingCard(
@@ -484,17 +495,22 @@ export function renderGame(
         return
       }
       flying.removeEventListener('transitionend', handleTransitionEnd)
-      flying.remove()
       resolveDone()
     }
 
     flying.addEventListener('transitionend', handleTransitionEnd)
+
+    const cleanup = (): void => {
+      flying.removeEventListener('transitionend', handleTransitionEnd)
+      flying.remove()
+    }
 
     return {
       element: flying,
       deltaX,
       deltaY,
       done,
+      cleanup,
     }
   }
 
@@ -600,32 +616,41 @@ export function renderGame(
     Promise.all([playerFlying.done, aiFlying.done]).then(() => {
       playerBattleCard.textContent = playerCardSnapshot.type
       aiBattleCard.textContent = 'back'
-      aiBattleCard.classList.add('is-back', 'is-preflip')
+      aiBattleCard.classList.add('is-back')
+      playerBattleCard.classList.add('is-appearing')
+      aiBattleCard.classList.add('is-appearing')
       battleStageReady = true
       updateBattleStageVisibility()
       requestAnimationFrame(() => {
-        aiBattleCard.classList.remove('is-preflip')
+        playerBattleCard.classList.remove('is-appearing')
+        aiBattleCard.classList.remove('is-appearing')
+        playerFlying.cleanup()
+        aiFlying.cleanup()
       })
 
       window.setTimeout(() => {
         aiBattleCard.classList.remove('is-back')
         aiBattleCard.textContent = aiCardSnapshot.type
 
-        if (matchSnapshot === MatchResult.Draw && roundSnapshot < maxRounds) {
-          window.setTimeout(() => {
-            battleStageReady = false
-            updateBattleStageVisibility()
-            window.setTimeout(() => {
-              resetRoundSelection()
-              resetBattleCards()
-            }, battleFadeDurationMs)
-          }, drawHoldMs)
-          return
-        }
-
         window.setTimeout(() => {
-          setGameState(GameState.ResultReady)
-        }, resultHoldMs)
+          runBattleCollision().then(() => {
+            if (matchSnapshot === MatchResult.Draw && roundSnapshot < maxRounds) {
+              window.setTimeout(() => {
+                battleStageReady = false
+                updateBattleStageVisibility()
+                window.setTimeout(() => {
+                  resetRoundSelection()
+                  resetBattleCards()
+                }, battleFadeDurationMs)
+              }, drawHoldMs)
+              return
+            }
+
+            window.setTimeout(() => {
+              setGameState(GameState.ResultReady)
+            }, resultHoldMs)
+          })
+        }, battleFlipDurationMs)
       }, arrivalHoldMs)
     })
   }
