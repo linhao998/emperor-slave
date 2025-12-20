@@ -11,6 +11,13 @@ type Card = {
   used: boolean
 }
 
+type FlyingCardHandle = {
+  element: HTMLDivElement
+  deltaX: number
+  deltaY: number
+  done: Promise<void>
+}
+
 enum GameState {
   Selecting = 'Selecting',
   Confirmed = 'Confirmed',
@@ -111,7 +118,6 @@ export function renderGame(
         return
       }
       if (selectedPlayerCardId === selectedCard.id) {
-        spawnFlyingCard(card)
         playerCard = selectedCard
         setGameState(GameState.Confirmed)
         setGameState(GameState.Resolving)
@@ -241,9 +247,10 @@ export function renderGame(
   let roundCount = 0
   let battleStageReady = false
   const maxRounds = 5
-  const flipDelayMs = 100
-  const revealHoldMs = 100
-  const settleDelayMs = 1000
+  const arrivalHoldMs = 1000
+  const drawHoldMs = 1000
+  const resultHoldMs = 1500
+  const battleFadeDurationMs = 300
 
   const logStateChange = (label: string, nextState: GameState): void => {
     console.log(label, {
@@ -274,16 +281,6 @@ export function renderGame(
       updateStateUI()
       startBattleSequence()
       logStateChange('[GameState] after', currentState)
-      if (matchResult === MatchResult.Draw && roundCount < maxRounds) {
-        window.setTimeout(() => {
-          resetRoundSelection()
-          resetBattleCards()
-        }, settleDelayMs)
-      } else {
-        window.setTimeout(() => {
-          setGameState(GameState.ResultReady)
-        }, settleDelayMs)
-      }
       return
     }
     if (nextState === GameState.ResultReady) {
@@ -425,11 +422,12 @@ export function renderGame(
     return { left: aiCardPositions[index], top: aiTop }
   }
 
+
   function resetBattleCards(): void {
     aiBattleCard.classList.add('is-hidden')
     playerBattleCard.classList.add('is-hidden')
-    aiBattleCard.classList.remove('is-back', 'enter')
-    playerBattleCard.classList.remove('enter')
+    aiBattleCard.classList.remove('is-back', 'enter', 'is-preflip')
+    playerBattleCard.classList.remove('enter', 'is-preflip')
     aiBattleCard.textContent = ''
     playerBattleCard.textContent = ''
     battleResultText.textContent = ''
@@ -449,28 +447,20 @@ export function renderGame(
     playerBattleCard.classList.add('is-hidden')
   }
 
-  function beginAiRevealSequence(): void {
-    if (!aiCard || !matchResult) {
-      return
-    }
-    const aiCardSnapshot = aiCard
-    aiBattleCard.classList.add('is-back')
-    aiBattleCard.textContent = 'back'
-    window.setTimeout(() => {
-      aiBattleCard.classList.remove('is-back')
-      aiBattleCard.textContent = aiCardSnapshot.type
-      window.setTimeout(() => {
-        finalizeBattle()
-      }, revealHoldMs)
-    }, flipDelayMs)
-  }
-
-  function spawnFlyingCard(source: HTMLElement): void {
+  function createFlyingCard(
+    source: HTMLElement,
+    target: HTMLElement,
+    text: string,
+    isBack: boolean,
+  ): FlyingCardHandle {
     const start = source.getBoundingClientRect()
-    const target = playerBattleCard.getBoundingClientRect()
+    const destination = target.getBoundingClientRect()
     const flying = document.createElement('div')
     flying.className = 'flying-card'
-    flying.textContent = source.textContent ?? ''
+    if (isBack) {
+      flying.classList.add('is-back')
+    }
+    flying.textContent = text
     flying.style.left = `${start.left}px`
     flying.style.top = `${start.top}px`
     flying.style.width = `${start.width}px`
@@ -479,35 +469,41 @@ export function renderGame(
 
     const startCenterX = start.left + start.width / 2
     const startCenterY = start.top + start.height / 2
-    const targetCenterX = target.left + target.width / 2
-    const targetCenterY = target.top + target.height / 2
+    const targetCenterX = destination.left + destination.width / 2
+    const targetCenterY = destination.top + destination.height / 2
     const deltaX = targetCenterX - startCenterX
     const deltaY = targetCenterY - startCenterY
 
-    requestAnimationFrame(() => {
-      flying.style.transform = `translate(${deltaX}px, ${deltaY}px)`
+    let resolveDone: () => void
+    const done = new Promise<void>((resolve) => {
+      resolveDone = resolve
     })
 
-    const cleanup = (): void => {
-  flying.remove()
+    const handleTransitionEnd = (event: TransitionEvent): void => {
+      if (event.propertyName !== 'transform') {
+        return
+      }
+      flying.removeEventListener('transitionend', handleTransitionEnd)
+      flying.remove()
+      resolveDone()
+    }
 
-  // 1️⃣ 设置最终战斗牌内容
-  if (playerCard) {
-    playerBattleCard.textContent = playerCard.type
+    flying.addEventListener('transitionend', handleTransitionEnd)
+
+    return {
+      element: flying,
+      deltaX,
+      deltaY,
+      done,
+    }
   }
-  if (aiCard) {
-    aiBattleCard.textContent = 'back'
-  }
 
-  // 2️⃣ 统一开启战斗区
-  battleStageReady = true
-  updateBattleStageVisibility()
-
-  // 3️⃣ 再触发 AI 翻牌
-  beginAiRevealSequence()
-}
-
-    flying.addEventListener('transitionend', cleanup)
+  function startFlyingCards(cards: FlyingCardHandle[]): void {
+    requestAnimationFrame(() => {
+      cards.forEach((card) => {
+        card.element.style.transform = `translate(${card.deltaX}px, ${card.deltaY}px)`
+      })
+    })
   }
 
   function hidePlayerCardInHand(cardId: string): void {
@@ -568,26 +564,70 @@ export function renderGame(
   }
 
   function startBattleSequence(): void {
-    if (!playerCard) {
+    if (!playerCard || !aiCard || !matchResult) {
       return
     }
     const playerCardSnapshot = playerCard
-    const aiAnimationIndex = getNextAiAnimationIndex()
-    if (aiAnimationIndex === null) {
+    const aiCardSnapshot = aiCard
+    const matchSnapshot = matchResult
+    const roundSnapshot = roundCount
+    const playerElement = playerCardElementById.get(playerCardSnapshot.id)
+    const aiIndex = getNextAiAnimationIndex()
+    if (!playerElement || aiIndex === null) {
+      return
+    }
+    const aiElement = aiCardElements[aiIndex]
+    if (!aiElement) {
       return
     }
 
     resetBattleCards()
+
+    const playerFlying = createFlyingCard(
+      playerElement,
+      playerBattleCard,
+      playerElement.textContent ?? '',
+      false,
+    )
+    const aiFlying = createFlyingCard(aiElement, aiBattleCard, 'back', true)
+
     hidePlayerCardInHand(playerCardSnapshot.id)
     shiftPlayerHandAfterPlay(playerCardSnapshot.id)
-    hideAiCardInHand(aiAnimationIndex)
-  }
+    hideAiCardInHand(aiIndex)
 
-  function finalizeBattle(): void {
-    if (!matchResult) {
-      return
-    }
-    battleResultText.textContent = ''
+    startFlyingCards([playerFlying, aiFlying])
+
+    Promise.all([playerFlying.done, aiFlying.done]).then(() => {
+      playerBattleCard.textContent = playerCardSnapshot.type
+      aiBattleCard.textContent = 'back'
+      aiBattleCard.classList.add('is-back', 'is-preflip')
+      battleStageReady = true
+      updateBattleStageVisibility()
+      requestAnimationFrame(() => {
+        aiBattleCard.classList.remove('is-preflip')
+      })
+
+      window.setTimeout(() => {
+        aiBattleCard.classList.remove('is-back')
+        aiBattleCard.textContent = aiCardSnapshot.type
+
+        if (matchSnapshot === MatchResult.Draw && roundSnapshot < maxRounds) {
+          window.setTimeout(() => {
+            battleStageReady = false
+            updateBattleStageVisibility()
+            window.setTimeout(() => {
+              resetRoundSelection()
+              resetBattleCards()
+            }, battleFadeDurationMs)
+          }, drawHoldMs)
+          return
+        }
+
+        window.setTimeout(() => {
+          setGameState(GameState.ResultReady)
+        }, resultHoldMs)
+      }, arrivalHoldMs)
+    })
   }
 
   function drawRandomCard(hand: Card[]): Card | null {

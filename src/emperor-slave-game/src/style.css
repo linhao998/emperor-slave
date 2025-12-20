@@ -251,12 +251,30 @@ body {
 .battle-card {
   border-radius: 10px;
   opacity: 0;
-  transform: translateY(0);
+  --battle-translate-y: 0px;
+  --battle-rotate-y: 0deg;
+  transform-style: preserve-3d;
+  transform: translateY(var(--battle-translate-y)) rotateY(var(--battle-rotate-y));
+  backface-visibility: hidden;
   transition: opacity 0.3s ease, transform 0.6s ease;
 }
 
+.battle-card::after {
+  content: 'back';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #d9d9d9;
+  color: #111111;
+  border-radius: inherit;
+  backface-visibility: hidden;
+  transform: rotateY(180deg);
+}
+
 .battle-card.enter {
-  transform: translateY(200px);
+  --battle-translate-y: 200px;
 }
 
 .flying-card {
@@ -272,6 +290,11 @@ body {
   z-index: 9999;
   pointer-events: none;
   transition: transform 0.6s ease;
+}
+
+.flying-card.is-back {
+  background-color: #d9d9d9;
+  color: #111111;
 }
 
 .battle-area {
@@ -503,5 +526,32 @@ body {
 
 .battle-card.is-back {
   background-color: #d9d9d9;
-  color: #111111;
+  color: transparent;
+  --battle-rotate-y: 180deg;
+}
+
+.battle-area {
+  background-color: transparent;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  perspective: 800px;
+}
+
+.battle-card {
+  transition: opacity 0.3s ease, transform 0.6s ease;
+}
+
+.battle-card.is-preflip {
+  transition: opacity 0.3s ease, transform 0s;
+}
+
+.battle-area.show .battle-card {
+  visibility: visible;
+}
+
+.battle-area .battle-card.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, transform 0.6s ease, visibility 0s linear 0.3s;
 }
