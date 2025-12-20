@@ -15,7 +15,8 @@ enum GameState {
   Selecting = 'Selecting',
   Confirmed = 'Confirmed',
   Resolving = 'Resolving',
-  Result = 'Result',
+  ResultAnimating = 'ResultAnimating',
+  ResultReady = 'ResultReady',
 }
 
 export function renderGame(
@@ -110,6 +111,7 @@ export function renderGame(
         return
       }
       if (selectedPlayerCardId === selectedCard.id) {
+        spawnFlyingCard(card)
         playerCard = selectedCard
         setGameState(GameState.Confirmed)
         setGameState(GameState.Resolving)
@@ -237,25 +239,66 @@ export function renderGame(
   let aiCard: Card | null = null
   let matchResult: MatchResult | null = null
   let roundCount = 0
+  let battleStageReady = false
   const maxRounds = 5
   const flipDelayMs = 100
   const revealHoldMs = 100
+  const settleDelayMs = 1000
+
+  const logStateChange = (label: string, nextState: GameState): void => {
+    console.log(label, {
+      from: currentState,
+      to: nextState,
+      playerCard: playerCard ? `${playerCard.id}/${playerCard.type}` : null,
+      aiCard: aiCard ? `${aiCard.id}/${aiCard.type}` : null,
+      matchResult,
+    })
+  }
 
   const setGameState = (nextState: GameState): void => {
+    logStateChange('[GameState] before', nextState)
     if (nextState === GameState.Resolving) {
       if (!playerCard) {
         return
       }
       roundCount += 1
       playerCard.used = true
-      currentState = nextState
+      aiCard = drawRandomCard(aiHandCards)
+      if (!aiCard) {
+        return
+      }
+      aiCard.used = true
+      matchResult = determineResult(playerCard.type, aiCard.type)
+      battleStageReady = false
+      currentState = GameState.ResultAnimating
       updateStateUI()
       startBattleSequence()
+      logStateChange('[GameState] after', currentState)
+      if (matchResult === MatchResult.Draw && roundCount < maxRounds) {
+        window.setTimeout(() => {
+          resetRoundSelection()
+          resetBattleCards()
+        }, settleDelayMs)
+      } else {
+        window.setTimeout(() => {
+          setGameState(GameState.ResultReady)
+        }, settleDelayMs)
+      }
+      return
+    }
+    if (nextState === GameState.ResultReady) {
+      currentState = nextState
+      updateStateUI()
+      if (matchResult) {
+        resultMessage.textContent = getResultLabel(matchResult)
+      }
+      logStateChange('[GameState] after', currentState)
       return
     }
 
     currentState = nextState
     updateStateUI()
+    logStateChange('[GameState] after', currentState)
   }
 
   resetGame()
@@ -320,6 +363,7 @@ export function renderGame(
     matchResult = null
     selectedPlayerCardId = null
     roundCount = 0
+    battleStageReady = false
     currentState = GameState.Selecting
     resetBattleCards()
     resetHandLayout()
@@ -354,6 +398,18 @@ export function renderGame(
     })
   }
 
+  function resetRoundSelection(): void {
+    playerCard = null
+    selectedPlayerCardId = null
+    aiCard = null
+    matchResult = null
+    battleStageReady = false
+    currentState = GameState.Selecting
+    resultMessage.textContent = ''
+    updateSelectedCard()
+    updateStateUI()
+  }
+
   function getPlayerCardPosition(cardId: string): { left: number; top: number } | null {
     const index = playerSlotIndexById[cardId]
     if (index === undefined) {
@@ -369,21 +425,11 @@ export function renderGame(
     return { left: aiCardPositions[index], top: aiTop }
   }
 
-  function resetRoundSelection(): void {
-    playerCard = null
-    selectedPlayerCardId = null
-    aiCard = null
-    matchResult = null
-    currentState = GameState.Selecting
-    updateSelectedCard()
-    updateStateUI()
-  }
-
   function resetBattleCards(): void {
     aiBattleCard.classList.add('is-hidden')
     playerBattleCard.classList.add('is-hidden')
-    aiBattleCard.classList.remove('is-moving', 'is-back')
-    playerBattleCard.classList.remove('is-moving')
+    aiBattleCard.classList.remove('is-back', 'enter')
+    playerBattleCard.classList.remove('enter')
     aiBattleCard.textContent = ''
     playerBattleCard.textContent = ''
     battleResultText.textContent = ''
@@ -391,6 +437,77 @@ export function renderGame(
     aiBattleCard.style.top = `${battlePositions.ai.top}px`
     playerBattleCard.style.left = `${battlePositions.player.left}px`
     playerBattleCard.style.top = `${battlePositions.player.top}px`
+  }
+
+  function updateBattleStageVisibility(): void {
+    if (battleStageReady) {
+      aiBattleCard.classList.remove('is-hidden')
+      playerBattleCard.classList.remove('is-hidden')
+      return
+    }
+    aiBattleCard.classList.add('is-hidden')
+    playerBattleCard.classList.add('is-hidden')
+  }
+
+  function beginAiRevealSequence(): void {
+    if (!aiCard || !matchResult) {
+      return
+    }
+    const aiCardSnapshot = aiCard
+    aiBattleCard.classList.add('is-back')
+    aiBattleCard.textContent = 'back'
+    window.setTimeout(() => {
+      aiBattleCard.classList.remove('is-back')
+      aiBattleCard.textContent = aiCardSnapshot.type
+      window.setTimeout(() => {
+        finalizeBattle()
+      }, revealHoldMs)
+    }, flipDelayMs)
+  }
+
+  function spawnFlyingCard(source: HTMLElement): void {
+    const start = source.getBoundingClientRect()
+    const target = playerBattleCard.getBoundingClientRect()
+    const flying = document.createElement('div')
+    flying.className = 'flying-card'
+    flying.textContent = source.textContent ?? ''
+    flying.style.left = `${start.left}px`
+    flying.style.top = `${start.top}px`
+    flying.style.width = `${start.width}px`
+    flying.style.height = `${start.height}px`
+    document.body.appendChild(flying)
+
+    const startCenterX = start.left + start.width / 2
+    const startCenterY = start.top + start.height / 2
+    const targetCenterX = target.left + target.width / 2
+    const targetCenterY = target.top + target.height / 2
+    const deltaX = targetCenterX - startCenterX
+    const deltaY = targetCenterY - startCenterY
+
+    requestAnimationFrame(() => {
+      flying.style.transform = `translate(${deltaX}px, ${deltaY}px)`
+    })
+
+    const cleanup = (): void => {
+  flying.remove()
+
+  // 1️⃣ 设置最终战斗牌内容
+  if (playerCard) {
+    playerBattleCard.textContent = playerCard.type
+  }
+  if (aiCard) {
+    aiBattleCard.textContent = 'back'
+  }
+
+  // 2️⃣ 统一开启战斗区
+  battleStageReady = true
+  updateBattleStageVisibility()
+
+  // 3️⃣ 再触发 AI 翻牌
+  beginAiRevealSequence()
+}
+
+    flying.addEventListener('transitionend', cleanup)
   }
 
   function hidePlayerCardInHand(cardId: string): void {
@@ -459,83 +576,18 @@ export function renderGame(
     if (aiAnimationIndex === null) {
       return
     }
-    const playerOrigin = getPlayerCardPosition(playerCardSnapshot.id)
-    const aiOrigin = getAiCardPositionByIndex(aiAnimationIndex)
-    if (!playerOrigin || !aiOrigin) {
-      return
-    }
-    aiCard = null
-    matchResult = null
 
     resetBattleCards()
     hidePlayerCardInHand(playerCardSnapshot.id)
     shiftPlayerHandAfterPlay(playerCardSnapshot.id)
     hideAiCardInHand(aiAnimationIndex)
-    playerBattleCard.classList.remove('is-hidden')
-    aiBattleCard.classList.remove('is-hidden')
-    playerBattleCard.textContent = playerCardSnapshot.type
-    aiBattleCard.textContent = 'back'
-    aiBattleCard.classList.add('is-back')
-    playerBattleCard.style.left = `${playerOrigin.left}px`
-    playerBattleCard.style.top = `${playerOrigin.top}px`
-    aiBattleCard.style.left = `${aiOrigin.left}px`
-    aiBattleCard.style.top = `${aiOrigin.top}px`
-    playerBattleCard.classList.add('is-moving')
-    aiBattleCard.classList.add('is-moving')
-
-    let pendingTransitions = 2
-    const onArrive = (event: TransitionEvent): void => {
-      if (event.propertyName !== 'top') {
-        return
-      }
-      const target = event.currentTarget as HTMLElement
-      target.removeEventListener('transitionend', onArrive)
-      pendingTransitions -= 1
-      if (pendingTransitions !== 0) {
-        return
-      }
-      const drawnAiCard = drawRandomCard(aiHandCards)
-      if (!drawnAiCard) {
-        return
-      }
-      drawnAiCard.used = true
-      aiCard = drawnAiCard
-      matchResult = determineResult(playerCardSnapshot.type, drawnAiCard.type)
-      window.setTimeout(() => {
-        aiBattleCard.classList.remove('is-back')
-        aiBattleCard.textContent = drawnAiCard.type
-        window.setTimeout(() => {
-          finalizeBattle()
-        }, revealHoldMs)
-      }, flipDelayMs)
-    }
-
-    playerBattleCard.addEventListener('transitionend', onArrive)
-    aiBattleCard.addEventListener('transitionend', onArrive)
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        playerBattleCard.style.left = `${battlePositions.player.left}px`
-        playerBattleCard.style.top = `${battlePositions.player.top}px`
-        aiBattleCard.style.left = `${battlePositions.ai.left}px`
-        aiBattleCard.style.top = `${battlePositions.ai.top}px`
-      })
-    })
   }
 
   function finalizeBattle(): void {
     if (!matchResult) {
       return
     }
-    if (matchResult === MatchResult.Draw && roundCount < maxRounds) {
-      resetRoundSelection()
-      resetBattleCards()
-      return
-    }
-    currentState = GameState.Result
-    updateStateUI()
     battleResultText.textContent = ''
-    resultMessage.textContent = getResultLabel(matchResult)
   }
 
   function drawRandomCard(hand: Card[]): Card | null {
@@ -555,7 +607,12 @@ export function renderGame(
 
   function updateStateUI(): void {
     playerHand.classList.toggle('is-locked', currentState !== GameState.Selecting)
-    if (currentState === GameState.Result) {
+    battleArea.classList.toggle(
+      'show',
+      currentState === GameState.ResultAnimating,
+    )
+    updateBattleStageVisibility()
+    if (currentState === GameState.ResultReady) {
       resultModal.classList.add('is-visible')
       resultModal.setAttribute('aria-hidden', 'false')
     } else {
