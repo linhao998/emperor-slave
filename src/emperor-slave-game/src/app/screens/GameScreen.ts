@@ -41,7 +41,7 @@ export function renderGame(
 
   let aiHandCards: Card[] = []
   const aiCardElements: HTMLDivElement[] = []
-  const aiCardPositions = [25, 150, 275, 400, 520]
+  const aiCardPositions = [25, 170, 315, 460, 600]
   const aiTop = 25
   aiCardPositions.forEach((left, index) => {
     const card = document.createElement('div')
@@ -83,13 +83,13 @@ export function renderGame(
   playerHand.className = 'player-hand'
 
   let playerHandCards: Card[] = []
-  const playerTop = 625
+  const playerTop = 595
   const playerSlots = [
-    { left: 820, cardId: 'P-E' },
-    { left: 945, cardId: 'P-S' },
-    { left: 1070, cardId: 'P-C1' },
-    { left: 1195, cardId: 'P-C2' },
-    { left: 1315, cardId: 'P-C3' },
+    { left: 720, cardId: 'P-E' },
+    { left: 865, cardId: 'P-S' },
+    { left: 1010, cardId: 'P-C1' },
+    { left: 1155, cardId: 'P-C2' },
+    { left: 1295, cardId: 'P-C3' },
   ]
   const playerSlotPositionsByIndex = playerSlots.map((slot) => ({
     left: slot.left,
@@ -429,6 +429,8 @@ export function renderGame(
     playerBattleCard.classList.remove('enter', 'is-colliding', 'is-appearing')
     aiBattleCard.textContent = ''
     playerBattleCard.textContent = ''
+    aiBattleCard.removeAttribute('data-face')
+    playerBattleCard.removeAttribute('data-face')
     battleResultText.textContent = ''
     aiBattleCard.style.left = `${battlePositions.ai.left}px`
     aiBattleCard.style.top = `${battlePositions.ai.top}px`
@@ -463,6 +465,7 @@ export function renderGame(
     target: HTMLElement,
     text: string,
     isBack: boolean,
+    face?: CardType,
   ): FlyingCardHandle {
     const start = source.getBoundingClientRect()
     const destination = target.getBoundingClientRect()
@@ -470,6 +473,9 @@ export function renderGame(
     flying.className = 'flying-card'
     if (isBack) {
       flying.classList.add('is-back')
+    }
+    if (face) {
+      flying.setAttribute('data-face', face)
     }
     flying.textContent = text
     flying.style.left = `${start.left}px`
@@ -596,14 +602,16 @@ export function renderGame(
     if (!aiElement) {
       return
     }
+    const playerCardLabel = playerElement.textContent ?? ''
 
     resetBattleCards()
 
     const playerFlying = createFlyingCard(
       playerElement,
       playerBattleCard,
-      playerElement.textContent ?? '',
+      playerCardLabel,
       false,
+      playerCardSnapshot.type,
     )
     const aiFlying = createFlyingCard(aiElement, aiBattleCard, 'back', true)
 
@@ -614,13 +622,17 @@ export function renderGame(
     startFlyingCards([playerFlying, aiFlying])
 
     Promise.all([playerFlying.done, aiFlying.done]).then(() => {
-      playerBattleCard.textContent = playerCardSnapshot.type
+      playerBattleCard.textContent = playerCardLabel
       aiBattleCard.textContent = 'back'
+      playerBattleCard.setAttribute('data-face', playerCardSnapshot.type)
+      aiBattleCard.setAttribute('data-face', aiCardSnapshot.type)
       aiBattleCard.classList.add('is-back')
       playerBattleCard.classList.add('is-appearing')
       aiBattleCard.classList.add('is-appearing')
       battleStageReady = true
       updateBattleStageVisibility()
+      playerFlying.element.style.opacity = '0'
+      aiFlying.element.style.opacity = '0'
       requestAnimationFrame(() => {
         playerBattleCard.classList.remove('is-appearing')
         aiBattleCard.classList.remove('is-appearing')

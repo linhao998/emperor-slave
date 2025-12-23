@@ -4,6 +4,10 @@
   font-weight: 400;
   color: #111111;
   background-color: #e5e5e5;
+  --card-back-image: url('/assets/cards/back.png');
+  --card-emperor-image: url('/assets/cards/emperor.png');
+  --card-citizen-image: url('/assets/cards/citizen.png');
+  --card-slave-image: url('/assets/cards/slave.png');
 }
 
 *,
@@ -232,10 +236,15 @@ body {
 
 .card {
   position: absolute;
-  width: 100px;
-  height: 150px;
+  width: 120px;
+  height: 180px;
   border: 1px solid #797979;
   background-color: #ffffff;
+  --card-image: none;
+  background-image: var(--card-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -243,23 +252,95 @@ body {
   color: #111111;
 }
 
+.player-hand .player-card[data-card='P-E'] {
+  --card-image: var(--card-emperor-image);
+}
+
+.player-hand .player-card[data-card='P-S'] {
+  --card-image: var(--card-slave-image);
+}
+
+.player-hand .player-card[data-card^='P-C'] {
+  --card-image: var(--card-citizen-image);
+}
+
+.player-hand .player-card {
+  color: transparent;
+}
+
+.battle-card[data-face='Emperor'] {
+  --card-image: var(--card-emperor-image);
+}
+
+.battle-card[data-face='Citizen'] {
+  --card-image: var(--card-citizen-image);
+}
+
+.battle-card[data-face='Slave'] {
+  --card-image: var(--card-slave-image);
+}
+
+.battle-card[data-face] {
+  color: transparent;
+}
+
+.flying-card[data-face='Emperor'] {
+  --card-image: var(--card-emperor-image);
+}
+
+.flying-card[data-face='Citizen'] {
+  --card-image: var(--card-citizen-image);
+}
+
+.flying-card[data-face='Slave'] {
+  --card-image: var(--card-slave-image);
+}
+
+.flying-card[data-face] {
+  color: transparent;
+}
+
+.ai-hand .ai-card {
+  --card-image: var(--card-back-image);
+  color: transparent;
+}
+
 .ai-card,
 .player-card {
   border-radius: 10px;
 }
 
+.ai-card {
+  transform: rotate(180deg);
+}
+
 .battle-card {
   border-radius: 10px;
   opacity: 0;
+  background-image: none;
   --battle-collision-offset: 0px;
   --battle-collision-y: 0px;
   --battle-translate-y: 0px;
   --battle-rotate-y: 0deg;
+  --battle-front-rotate-z: 0deg;
   transform-style: preserve-3d;
   transform: translateY(calc(var(--battle-translate-y) + var(--battle-collision-y)))
     rotateY(var(--battle-rotate-y));
   backface-visibility: hidden;
   transition: opacity 0.3s ease, transform 0.6s ease;
+}
+
+.battle-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--card-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: inherit;
+  backface-visibility: hidden;
+  transform: rotateZ(var(--battle-front-rotate-z));
 }
 
 .battle-card::after {
@@ -270,7 +351,11 @@ body {
   align-items: center;
   justify-content: center;
   background-color: #ffffff;
-  color: #111111;
+  background-image: var(--card-back-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: transparent;
   border-radius: inherit;
   border: 1px solid #797979;
   backface-visibility: hidden;
@@ -279,6 +364,10 @@ body {
 
 .battle-card.enter {
   --battle-translate-y: 200px;
+}
+
+.battle-area .battle-card:first-child {
+  --battle-front-rotate-z: 180deg;
 }
 
 .battle-card.is-colliding {
@@ -291,6 +380,11 @@ body {
   border: 1px solid #797979;
   border-radius: 10px;
   background-color: #ffffff;
+  --card-image: none;
+  background-image: var(--card-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -302,8 +396,8 @@ body {
 }
 
 .flying-card.is-back {
-  background-color: #ffffff;
-  color: #111111;
+  --card-image: var(--card-back-image);
+  color: transparent;
 }
 
 .battle-area {
