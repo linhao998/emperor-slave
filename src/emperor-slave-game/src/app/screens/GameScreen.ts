@@ -251,7 +251,7 @@ export function renderGame(
   const arrivalHoldMs = 1000
   const battleFlipDurationMs = 600
   const drawHoldMs = 1000
-  const resultHoldMs = 1500
+  const tearHoldMs = 1000
   const battleFadeDurationMs = 300
   const flyingCleanupDelayMs = 500
   const battleCollisionOffsetPx = 15
@@ -426,8 +426,14 @@ export function renderGame(
   function resetBattleCards(): void {
     aiBattleCard.classList.add('is-hidden')
     playerBattleCard.classList.add('is-hidden')
-    aiBattleCard.classList.remove('is-back', 'enter', 'is-colliding', 'is-appearing')
-    playerBattleCard.classList.remove('enter', 'is-colliding', 'is-appearing')
+    aiBattleCard.classList.remove(
+      'is-back',
+      'enter',
+      'is-colliding',
+      'is-appearing',
+      'is-torn',
+    )
+    playerBattleCard.classList.remove('enter', 'is-colliding', 'is-appearing', 'is-torn')
     aiBattleCard.textContent = ''
     playerBattleCard.textContent = ''
     aiBattleCard.removeAttribute('data-face')
@@ -661,9 +667,16 @@ export function renderGame(
               return
             }
 
-            window.setTimeout(() => {
-              setGameState(GameState.ResultReady)
-            }, resultHoldMs)
+            if (matchSnapshot === MatchResult.PlayerWin) {
+              aiBattleCard.classList.add('is-torn')
+            } else if (matchSnapshot === MatchResult.AIWin) {
+              playerBattleCard.classList.add('is-torn')
+            }
+            requestAnimationFrame(() => {
+              window.setTimeout(() => {
+                setGameState(GameState.ResultReady)
+              }, tearHoldMs)
+            })
           })
         }, battleFlipDurationMs)
       }, arrivalHoldMs)
