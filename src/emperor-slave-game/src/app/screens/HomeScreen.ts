@@ -39,7 +39,11 @@ export function renderHome(
 
   const versionLabel = document.createElement('div')
   versionLabel.className = 'home-version'
-  versionLabel.textContent = '版本号：v0.1'
+  versionLabel.textContent = '版本号：v0.2'
+
+  const rotateHint = document.createElement('div')
+  rotateHint.className = 'home-hint'
+  rotateHint.textContent = '请横屏或全屏以获得最佳体验'
 
   const guideModal = document.createElement('div')
   guideModal.className = 'guide-modal'
@@ -115,7 +119,14 @@ export function renderHome(
   exitDialog.append(exitTitle, exitActions)
   exitModal.appendChild(exitDialog)
 
-  container.append(title, buttonGroup, versionLabel, guideModal, exitModal)
+  container.append(
+    title,
+    buttonGroup,
+    versionLabel,
+    rotateHint,
+    guideModal,
+    exitModal,
+  )
 
   function showGuide(): void {
     guideModal.classList.add('is-visible')
