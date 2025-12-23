@@ -253,6 +253,7 @@ export function renderGame(
   const drawHoldMs = 1000
   const resultHoldMs = 1500
   const battleFadeDurationMs = 300
+  const flyingCleanupDelayMs = 500
   const battleCollisionOffsetPx = 15
   const battleCollisionDurationMs = 120
   const battleCollisionHoldMs = 100
@@ -631,14 +632,16 @@ export function renderGame(
       aiBattleCard.classList.add('is-appearing')
       battleStageReady = true
       updateBattleStageVisibility()
-      playerFlying.element.style.opacity = '0'
-      aiFlying.element.style.opacity = '0'
       requestAnimationFrame(() => {
         playerBattleCard.classList.remove('is-appearing')
         aiBattleCard.classList.remove('is-appearing')
+      })
+      window.setTimeout(() => {
+        playerFlying.element.style.opacity = '0'
+        aiFlying.element.style.opacity = '0'
         playerFlying.cleanup()
         aiFlying.cleanup()
-      })
+      }, flyingCleanupDelayMs)
 
       window.setTimeout(() => {
         aiBattleCard.classList.remove('is-back')
