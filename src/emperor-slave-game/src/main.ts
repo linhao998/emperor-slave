@@ -12,6 +12,20 @@ if (!host) {
 const root = createApp()
 host.appendChild(root)
 
+const stageWidth = 1440
+const stageHeight = 800
+
+const applyStageScale = (): void => {
+  const scale = Math.min(
+    window.innerWidth / stageWidth,
+    window.innerHeight / stageHeight,
+  )
+  root.style.transform = `scale(${scale})`
+  root.style.transformOrigin = 'center center'
+}
+
+window.addEventListener('resize', applyStageScale)
+
 const showHome = (): void => {
   renderHome(root, (target) => {
     if (target === 'start') {
@@ -29,3 +43,4 @@ const showGame = (): void => {
 }
 
 showHome()
+applyStageScale()
