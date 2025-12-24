@@ -1,6 +1,7 @@
 @font-face {
   font-family: 'ZCOOLRegular';
-  src: url('/assets/fonts/ZCOOL_Regular.ttf') format('truetype');
+  src: url('/assets/fonts/ZCOOL_Regular.woff2') format('woff2'),
+    url('/assets/fonts/ZCOOL_Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -8,7 +9,8 @@
 
 @font-face {
   font-family: 'QingKeHuangYou';
-  src: url('/assets/fonts/QingKeHuangYou-Regular.ttf') format('truetype');
+  src: url('/assets/fonts/QingKeHuangYou-Regular.woff2') format('woff2'),
+    url('/assets/fonts/QingKeHuangYou-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -23,6 +25,9 @@
   font-weight: 400;
   color: #111111;
   background-color: #e5e5e5;
+}
+
+body.is-game-active {
   --card-back-image: url('/assets/cards/back.png');
   --card-emperor-image: url('/assets/cards/emperor.png');
   --card-citizen-image: url('/assets/cards/citizen.png');

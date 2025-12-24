@@ -27,6 +27,7 @@ const applyStageScale = (): void => {
 window.addEventListener('resize', applyStageScale)
 
 const showHome = (): void => {
+  document.body.classList.remove('is-game-active')
   renderHome(root, (target) => {
     if (target === 'start') {
       showGame()
@@ -35,6 +36,7 @@ const showHome = (): void => {
 }
 
 const showGame = (): void => {
+  document.body.classList.add('is-game-active')
   renderGame(root, {
     onExitToHome: () => {
       showHome()
