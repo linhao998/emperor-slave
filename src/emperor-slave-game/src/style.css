@@ -81,11 +81,29 @@ button {
   font-weight: 700;
   line-height: 115px;
   font-family: 'ZCOOLRegular', Arial, sans-serif;
-  background: linear-gradient(180deg, #ffffff 0%, #f1d6a8 45%, #c27b2a 100%);
+  background: linear-gradient(180deg, #fff1d0 0%, #d4973a 45%, #7a3f0e 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 8px 16px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(255, 214, 140, 0.55);
+  letter-spacing: 2px;
+  animation: titlePulse 2.4s ease-in-out infinite;
+  will-change: transform, text-shadow;
+}
+
+@keyframes titlePulse {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    text-shadow: 0 6px 14px rgba(0, 0, 0, 0.55),
+      0 0 18px rgba(255, 236, 180, 0.6);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.03);
+    text-shadow: 0 10px 22px rgba(0, 0, 0, 0.6),
+      0 0 28px rgba(255, 236, 180, 0.85);
+  }
 }
 
 .home-actions {
