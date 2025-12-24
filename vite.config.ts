@@ -1,5 +1,9 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  base: '/emperor-slave/',
+  base: './',
+  build: {
+    outDir: 'docs',
+    emptyOutDir: true,
+  },
 })
