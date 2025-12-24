@@ -251,7 +251,7 @@ export function renderGame(
   const arrivalHoldMs = 1000
   const battleFlipDurationMs = 600
   const drawHoldMs = 1000
-  const tearHoldMs = 1000
+  const tearHoldMs = 1300
   const battleFadeDurationMs = 300
   const flyingCleanupDelayMs = 500
   const battleCollisionOffsetPx = 15

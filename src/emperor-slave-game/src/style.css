@@ -27,6 +27,9 @@
   --card-emperor-image: url('/assets/cards/emperor.png');
   --card-citizen-image: url('/assets/cards/citizen.png');
   --card-slave-image: url('/assets/cards/slave.png');
+  --card-emperor-break-image: url('/assets/cards/emperor_break.png');
+  --card-citizen-break-image: url('/assets/cards/citizen_break.png');
+  --card-slave-break-image: url('/assets/cards/slave_break.png');
 }
 
 *,
@@ -359,14 +362,17 @@ button {
 
 .battle-card[data-face='Emperor'] {
   --card-image: var(--card-emperor-image);
+  --card-break-image: var(--card-emperor-break-image);
 }
 
 .battle-card[data-face='Citizen'] {
   --card-image: var(--card-citizen-image);
+  --card-break-image: var(--card-citizen-break-image);
 }
 
 .battle-card[data-face='Slave'] {
   --card-image: var(--card-slave-image);
+  --card-break-image: var(--card-slave-break-image);
 }
 
 .battle-card[data-face] {
@@ -407,9 +413,8 @@ button {
   border-radius: 10px;
   opacity: 0;
   background-image: none;
-  --card-tear-overlay: none;
-  --card-tear-shadow: none;
-  --card-tear-filter: none;
+  background-color: transparent;
+  --card-break-image: var(--card-image);
   --battle-collision-offset: 0px;
   --battle-collision-y: 0px;
   --battle-translate-y: 0px;
@@ -426,15 +431,12 @@ button {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: var(--card-image), var(--card-tear-overlay);
-  background-size: cover, 100% 100%, 28px 28px;
-  background-position: center, center, center;
+  background-image: var(--card-image);
+  background-size: cover;
+  background-position: center;
   background-repeat: no-repeat;
-  background-blend-mode: normal, multiply, screen;
   border-radius: inherit;
-  box-shadow: var(--card-tear-shadow);
   backface-visibility: hidden;
-  filter: var(--card-tear-filter);
   transform: rotateZ(var(--battle-front-rotate-z));
 }
 
@@ -462,24 +464,33 @@ button {
 }
 
 .battle-card.is-torn {
-  --card-tear-overlay: linear-gradient(
-      120deg,
-      rgba(255, 245, 230, 0.85) 0%,
-      rgba(255, 245, 230, 0.05) 18%,
-      rgba(70, 42, 12, 0.8) 22%,
-      transparent 34%,
-      rgba(70, 42, 12, 0.9) 48%,
-      rgba(255, 245, 230, 0.4) 55%,
-      transparent 66%
-    ),
-    repeating-linear-gradient(
-      135deg,
-      rgba(40, 24, 8, 0.85) 0 2px,
-      transparent 2px 10px
-    );
-  --card-tear-shadow: inset 0 0 0 2px rgba(70, 42, 12, 0.7),
-    0 6px 10px rgba(0, 0, 0, 0.35);
-  --card-tear-filter: saturate(0.7) contrast(1.25) brightness(0.92);
+  border-color: transparent;
+}
+
+.battle-card.is-torn::before {
+  animation: battleBreakReveal 0.3s ease-in-out forwards;
+}
+
+@keyframes battleBreakReveal {
+  0% {
+    opacity: 1;
+    background-image: var(--card-image);
+    background-size: cover;
+  }
+  45% {
+    opacity: 0;
+    background-size: cover;
+  }
+  50% {
+    opacity: 0;
+    background-image: var(--card-break-image);
+    background-size: 120px auto;
+  }
+  100% {
+    opacity: 1;
+    background-image: var(--card-break-image);
+    background-size: 120px auto;
+  }
 }
 
 .battle-area .battle-card:first-child {
