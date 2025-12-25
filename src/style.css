@@ -48,6 +48,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background-color: #e5e5e5;
+  overflow: hidden;
 }
 
 button {
@@ -55,11 +56,10 @@ button {
 }
 
 #app {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .app-root {
@@ -74,7 +74,11 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  position: relative;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(var(--stage-scale, 1));
+  transform-origin: top left;
   text-align: center;
 }
 

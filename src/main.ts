@@ -15,13 +15,23 @@ host.appendChild(root)
 const stageWidth = 1440
 const stageHeight = 800
 
+const getViewportSize = (): { width: number; height: number } => {
+  if (window.visualViewport) {
+    return {
+      width: window.visualViewport.width,
+      height: window.visualViewport.height,
+    }
+  }
+  return {
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }
+}
+
 const applyStageScale = (): void => {
-  const scale = Math.min(
-    window.innerWidth / stageWidth,
-    window.innerHeight / stageHeight,
-  )
-  root.style.transform = `scale(${scale})`
-  root.style.transformOrigin = 'center center'
+  const { width, height } = getViewportSize()
+  const scale = Math.min(width / stageWidth, height / stageHeight)
+  root.style.setProperty('--stage-scale', `${scale}`)
 }
 
 window.addEventListener('resize', applyStageScale)
