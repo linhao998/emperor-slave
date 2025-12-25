@@ -31,7 +31,13 @@ const getViewportSize = (): { width: number; height: number } => {
 const applyStageScale = (): void => {
   const { width, height } = getViewportSize()
   const scale = Math.min(width / stageWidth, height / stageHeight)
+  const scaledWidth = stageWidth * scale
+  const scaledHeight = stageHeight * scale
+  const offsetLeft = (width - scaledWidth) / 2
+  const offsetTop = (height - scaledHeight) / 2
   root.style.setProperty('--stage-scale', `${scale}`)
+  root.style.left = `${offsetLeft}px`
+  root.style.top = `${offsetTop}px`
 }
 
 window.addEventListener('resize', applyStageScale)
